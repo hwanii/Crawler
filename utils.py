@@ -27,35 +27,37 @@ def get_top100_list(refresh_html=False):
 
     # 만들 파일의 path 지정(/data/chart_realtime_50.html)
     # /data/chart_realtime_50.html
-    file_path_50 = os.path.join(path_data_dir, 'chart_realtime_50.html')
+    file_path = os.path.join(path_data_dir, 'chart_realtime.html')
 
     # 파일을 만들때는 폴더의 path가 아니라 파일의 path를 입력해줘야함
     # 파일이 있는 경우를 검사 후 로직 실행
-    if not os.path.exists(file_path_50):
+    # refresh_html 매개변수가 true일 경우, 무조건 새로 파일을 다운받도록 함 -> 존재하지 않을때 덮어써 또는 매개변수 true일때
+    if not os.path.exists(file_path) or refresh_html:
         response = requests.get(url_chart_realtime_50)
         source = response.text
-        with open(file_path_50, 'wt') as f:
+        with open(file_path, 'wt') as f:
             f.write(source)
     else:
-        print(f'"{file_path_50}" file is already exists!!')
+        print(f'"{file_path}" file is already exists!!')
 
 
     # try-except문, xt로 파일이 이미 존재하는지 확인
-    file_path_100 = os.path.join(path_data_dir, 'chart_realtime_100.html')
-    try:
-        with open(file_path_100, 'xt') as f:
-            response = requests.get(url_chart_realtime_100)
-            source = response.text
-            f.write(source)
-    except FileExistsError as e:
-        print(f'"{file_path_100}" file is already exists!!')
+    # file_path_100 = os.path.join(path_data_dir, 'chart_realtime_100.html')
+    # try:
+    #     word = 'wt' if refresh_html else 'xt'
+    #     with open(file_path_100, word) as f:
+    #         response = requests.get(url_chart_realtime_100)
+    #         source = response.text
+    #         f.write(source)
+    # except FileExistsError as e:
+    #     print(f'"{file_path_100}" file is already exists!!')
 
 
     result = []
 
     # 50위까지
 
-    source = open(file_path_50, 'rt').read()
+    source = open(file_path, 'rt').read()
     soup = BeautifulSoup(source, 'lxml')
     for tr in soup.find_all('tr', class_='lst50'):
         rank = tr.find('span', class_='rank').text
@@ -73,22 +75,4 @@ def get_top100_list(refresh_html=False):
             'album': album,
         })
 
-    # 100위까지
-    source = open(file_path_100, 'rt').read()
-    soup = BeautifulSoup(source, 'lxml')
-    for tr in soup.find_all('tr', class_='lst100'):
-        rank = tr.find('span', class_='rank').text
-        title = tr.find('div', class_='rank01').find('a').text
-        artist = tr.find('div', class_='rank02').find('a').text
-        album = tr.find('div', class_='rank03').find('a').text
-        url_image_cover = tr.find('a', class_='image_typeAll').find('img')['src']
-        p = re.compile(r'(.*\..*?)')
-        url_image_cover = re.search(p, url_image_cover).group(1)
-        result.append({
-            'rank': rank,
-            'title': title,
-            'url_img_cover': url_image_cover,
-            'artist': artist,
-            'album': album,
-        })
     return result
