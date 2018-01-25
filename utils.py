@@ -63,12 +63,54 @@ def get_top100_list(refresh_html=False):
         url_image_cover = tr.find('a', class_='image_typeAll').find('img').get('src')
         p = re.compile(r'(.*\..*?)/')
         url_image_cover = re.search(p, url_image_cover).group(1)
+        data_song_no = tr.get('data-song-no')
         result.append({
             'rank': rank,
             'title': title,
             'url_img_cover': url_image_cover,
             'artist': artist,
             'album': album,
+            'song_id' : data_song_no,
         })
 
     return result
+
+
+def get_song_detail(song_id, refresh_html = False):
+    """
+    song_id에 해당하는 곡 정보 dict를 반환
+
+    :param song_id:
+    :return:
+    """
+
+    path_data = os.path.join(os.getcwd(), 'data', f'{song_id}.html')
+    if not os.path.exists(path_data) or refresh_html:
+        response = requests.get(f'https://www.melon.com/song/detail.htm?songId={song_id}')
+        source = response.text
+        with open(path_data, 'wt') as f:
+            f.write(source)
+    else:
+        print(f'"{path_data}" file is already exists!!')
+
+    source = open(path_data, 'rt').read()
+    soup = BeautifulSoup(source, 'lxml')
+    title_raw = soup.find('div', class_='song_name').contents[2]
+    title = re.sub('\\t|\\n','',title_raw)
+    artist = soup.find('div', class_='artist').find('span').text
+    album = soup.find('dl', class_='list').find('a').text
+    publish_date = soup.find('dl', class_='list').contents[7].text
+    genre = soup.find('dl', class_='list').contents[11].text
+    lyric_raw = soup.find('div', class_='lyric').text
+    lyric = re.sub('\\t|\\n', '', lyric_raw)
+    song_dic = {
+        'title' : title,
+        'artist' : artist,
+        'album' : album,
+        'published_date' : publish_date,
+        'genre' : genre,
+        'lyric' : lyric,
+    }
+    return song_dic
+
+# 숙제 : song_id 추가, get_song_detail 함수 완성, song_detail_{song_id}.html 파일 생성되게
